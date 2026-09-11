@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lubricant Injection Checklist</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#f3f5f7;color:#1f2937}
+header{background:#183a5a;color:white;padding:18px 22px;position:sticky;top:0;z-index:5}
+h1{margin:0 0 6px;font-size:24px} .sub{font-size:13px;opacity:.9}
+.controls{padding:12px 18px;background:white;border-bottom:1px solid #ddd;display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:82px;z-index:4}
+input,select,button{font:inherit} input[type=text],select{padding:8px;border:1px solid #bbb;border-radius:5px}
+button{padding:8px 12px;border:0;border-radius:5px;background:#2563eb;color:#fff;cursor:pointer} button.gray{background:#64748b}
+.summary{padding:10px 18px;display:flex;gap:10px;flex-wrap:wrap} .card{background:#fff;padding:9px 14px;border-radius:7px;box-shadow:0 1px 3px #0001;font-size:13px}
+.tablewrap{margin:0 18px 30px;background:#fff;border:1px solid #ccc;overflow:auto}
+table{border-collapse:collapse;width:100%;min-width:1500px;font-size:12px}
+th,td{border:1px solid #bbb;padding:6px 5px;vertical-align:middle}
+th{background:#dce9f4;text-align:center;position:sticky;top:128px;z-index:2;white-space:nowrap}
+td.center{text-align:center} td.eq{font-weight:bold;white-space:nowrap}
+.date{width:125px;padding:6px;border:1px solid #aaa;border-radius:4px}
+.qty{width:85px;padding:6px;border:1px solid #aaa;border-radius:4px}
+.worker{width:100px;padding:6px;border:1px solid #aaa;border-radius:4px}
+.remark{width:150px;padding:6px;border:1px solid #aaa;border-radius:4px}
+.next{font-weight:bold;white-space:nowrap}
+.status{font-weight:bold;text-align:center;white-space:nowrap}
+.ok{background:#e8f5e9;color:#176b2c} .soon{background:#fff5cc;color:#8a5a00} .over{background:#ffe0e0;color:#a40000}
+.unknown{background:#eee;color:#555}
+@media print{body{background:#fff} header,.controls,.summary{position:static} .tablewrap{margin:0;overflow:visible;border:0} table{font-size:7pt;min-width:0;width:100%} th{position:static} input{border:0;background:transparent;padding:0;width:auto} @page{size:A3 portrait;margin:8mm} .no-print{display:none}}
+</style>
+</head>
+<body>
+<header><h1>LUBRICANT INJECTION CHECKLIST</h1><div class="sub">현장 작업자가 실제 주입일자를 입력하면 다음 주입일자가 자동 계산됩니다.</div></header>
+<div class="controls">
+<input id="search" type="text" placeholder="설비 / Lubricant / Injection Item 검색">
+<select id="filter"><option value="ALL">전체</option><option value="OVERDUE">지연 OVERDUE</option><option value="SOON">7일 이내 DUE SOON</option><option value="OK">정상 OK</option><option value="CHECK">주기 확인 CHECK CYCLE</option></select>
+<button onclick="window.print()">A3 PDF / 인쇄</button>
+<button class="gray" onclick="exportCSV()">CSV 저장</button>
+<button class="gray" onclick="clearAll()">입력값 전체 삭제</button>
+</div>
+<div class="summary" id="summary"></div>
+<div class="tablewrap">
+<table id="tbl"><thead><tr>
+<th>No.</th><th>EQUIPMENT</th><th>EQUIPMENT-KKS</th><th>LCP-KKS</th><th>Injection Item</th><th>Lubricant Model</th><th>Dosage / Cycle</th><th>Injection Point</th><th>Injected Q'ty</th><th>Injection Date</th><th>Next Injection Date</th><th>Status</th><th>Worker</th><th>Remarks</th>
+</tr></thead><tbody></tbody></table>
+</div>
+<script>
+const DATA=[["Belt Conveyor #1", "03ETD10AF001", "03ETD10GH160", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #1", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #2", "03ETD10AF002", "03ETD10GH170", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #2", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #3", "03ETD10AF003", "03ETD10GH180", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #3", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #4", "03ETD10AF004", "03ETD10GH190", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #4", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #5", "03ETD30AF001", "03ETD30GH150", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #5", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #6", "03ETD30AF002", "03ETD30GH160", "Vibration Motor Reducer", "Renolin CLP 220", "4.4 L / 2 years", "1"], ["Belt Conveyor #6", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #7", "03ETD40AF001", "03ETD40GH130", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #7", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #8", "03ETD40AF002", "03ETD40GH140", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #8", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #9", "03ETD20AF001", "03ETD20GH160", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #9", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #10", "03ETD20AF002", "03ETD20GH170", "Vibration Motor Reducer", "Renolin CLP 220", "6.5 L / 2 years", "1"], ["Belt Conveyor #10", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Belt Conveyor #11", "03ETD20AT001", "03ETD20GH110", "Vibration Motor Reducer", "Renolin CLP 220", "?? L / 2 years", "1"], ["Belt Conveyor #11", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "4"], ["Belt Conveyor #13", "03ETD20AT004", "03ETD20GH130", "Vibration Motor Reducer", "Renolin CLP 220", "?? L / 2 years", "1"], ["Belt Conveyor #13", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "4"], ["Belt Conveyor #14", "03ETD40AT003", "03ETD40GH120", "Vibration Motor Reducer", "Renolin CLP 220", "?? L / 2 years", "1"], ["Belt Conveyor #14", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "4"], ["Vibration Feeder #1", "03ETD10AT001", "03ETD10GH110", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "2"], ["Vibration Screen #1", "03ETD10AT003", "03ETD10GH140", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "2"], ["Vibration Screen #2", "03ETD20AT002", "03ETD20GH150", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "2"], ["Vibration Screen #3", "03ETD30AT006", "03ETD30GH120", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "2"], ["Vibration Screen #4", "03ETD10AT005", "03ETD10GH150", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "2"], ["Vibration Screen #5", "03ETD20AT003", "03ETD20GH120", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "2"], ["Roller Crusher #1", "03ETD10AJ001", "03ETD50GH110", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "4"], ["Roller Crusher #1", "", "", "Reducer Box SK72 (2pcs)", "Mobil Glygoyte 220 / Shell Twela S 220", "10 Ltr x 2", "2"], ["Roller Crusher #1", "", "", "Adjustment Assembly", "Mobil DTE 25 (>-7°C) / Shell Alvania EP2", "40 g", "2"], ["Roller Crusher #1", "", "", "Chain", "Lithium-based grease", "0.5 kg / 2 months", "2"], ["Roller Crusher #2", "03ETD10AJ002", "03ETD50GH120", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "4"], ["Roller Crusher #2", "", "", "Reducer Box SK62 (2pcs)", "Mobil Glygoyte 220 / Shell Twela S 220", "6.5 Ltr x 2", "2"], ["Roller Crusher #2", "", "", "Adjustment Assembly", "Mobil DTE 25 (>-7°C) / Shell Alvania EP2", "40 g", "2"], ["Roller Crusher #2", "", "", "Chain", "Lithium-based grease", "0.5 kg / 2 months", "2"], ["Ferrous Metal Separator #1", "03ETD10AT002", "03ETD10GH170", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Ferrous Metal Separator #1", "", "", "Reducer", "Renolin CLP 220", "—", "1"], ["Ferrous Metal Separator #1", "", "", "Chain", "Lithium-based grease", "0.5 kg / 2 months", "1"], ["Ferrous Metal Separator #2", "03ETD10AT004", "03ETD10GH180", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Ferrous Metal Separator #2", "", "", "Reducer", "Renolin CLP 220", "—", "1"], ["Ferrous Metal Separator #2", "", "", "Chain", "Lithium-based grease", "0.5 kg / 2 months", "1"], ["Ferrous Metal Separator #3", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "8"], ["Ferrous Metal Separator #3", "", "", "Reducer", "Renolin CLP 220", "—", "1"], ["Ferrous Metal Separator #3", "", "", "Chain", "Lithium-based grease", "0.5 kg / 2 months", "1"], ["Air Separator", "03ETD30AT005", "03ETD30GH130", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "—"], ["Bag Filter", "03ETD30AT003", "03ETD30GH140", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "—"], ["Non-Ferrous Metal Separator #1", "03ETD20AT006", "03ETD20GH140", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "—"], ["Non-Ferrous Metal Separator #2", "03ETD30AT001", "03ETD30GH110", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "—"], ["Non-Ferrous Metal Separator #3", "03ETD40AT002", "03ETD40GH110", "Vibration Motor Bearing", "Mobilux EP2", "0.5 kg / 2 months", "—"], ["Discharge Conveyor #1", "23ETA10AF001", "23ETA10GH110", "Vibration Motor Reducer", "Renolin CLP 220", "10 L / 2 years", "8"], ["Discharge Conveyor #1", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "1"], ["Discharge Conveyor #2", "33ETA10AF001", "33ETA10GH110", "Vibration Motor Reducer", "Renolin CLP 220", "10 L / 2 years", "8"], ["Discharge Conveyor #2", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "1"], ["Two-Way Conveyor #1", "23ETA20AF001", "23ETA20GH110", "Vibration Motor Reducer", "Renolin CLP 220", "4.4 L / 2 years", "6"], ["Two-Way Conveyor #1", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "1"], ["Two-Way Conveyor #2", "33ETA20AF001", "33ETA20GH110", "Vibration Motor Reducer", "Renolin CLP 220", "4.4 L / 2 years", "6"], ["Two-Way Conveyor #2", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "1"], ["Waste Conveyor #2", "03EAC50AF002", "03EAC50GH120", "Vibration Motor Reducer", "Renolin CLP 220", "8.5 L / 2 years", "6"], ["Waste Conveyor #2", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "1"], ["Waste Conveyor #3", "03EAC50AF003", "03EAC50GH130", "Vibration Motor Reducer", "Renolin CLP 220", "8.5 L / 2 years", "6"], ["Waste Conveyor #3", "", "", "Bearing", "Mobilux EP2", "0.5 kg / 2 months", "1"], ["External Magnetic Separator #4", "", "", "Bearing", "NLGI 2", "4.2 L / 12 months", "4"], ["External Magnetic Separator #4", "", "", "Reducer", "RENOLIN CLP HC 220", "0.125 L / 12 months", "1"], ["External Magnetic Separator #5", "", "", "Bearing", "NLGI 2", "4.2 L / 12 months", "4"], ["External Magnetic Separator #5", "", "", "Reducer", "RENOLIN CLP HC 220", "0.125 L / 12 months", "1"]];
+const KEY='lubricantChecklist_v1';
+let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+
+function daysFor(s){
+ s=s.toLowerCase();
+ if(s.includes('2 months')) return 60;
+ if(s.includes('12 months')) return 365;
+ if(s.includes('2 years')) return 730;
+ return null;
+}
+function addDays(dateStr,days){
+ let d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+days);
+ return d.toISOString().slice(0,10);
+}
+function status(next){
+ if(!next) return ['CHECK CYCLE','unknown'];
+ const today=new Date(); today.setHours(0,0,0,0);
+ const d=new Date(next+'T00:00:00');
+ const diff=Math.round((d-today)/86400000);
+ if(diff<0) return ['OVERDUE','over'];
+ if(diff<=7) return ['DUE SOON','soon'];
+ return ['OK','ok'];
+}
+function render(){
+ const q=document.getElementById('search').value.toLowerCase();
+ const f=document.getElementById('filter').value;
+ const tb=document.querySelector('#tbl tbody'); tb.innerHTML='';
+ let counts={OVERDUE:0,SOON:0,OK:0,CHECK:0,TOTAL:0};
+ DATA.forEach((r,i)=>{
+   const key='r'+i, v=saved[key]||{};
+   const cycle=daysFor(r[5]); const next=v.date&&cycle?addDays(v.date,cycle):'';
+   const st=status(next)[0], cls=status(next)[1];
+   counts.TOTAL++;
+   if(st==='OVERDUE')counts.OVERDUE++; else if(st==='DUE SOON')counts.SOON++; else if(st==='OK')counts.OK++; else counts.CHECK++;
+   const text=r.join(' ').toLowerCase();
+   let show=!q||text.includes(q);
+   if(f==='OVERDUE')show=show&&st==='OVERDUE'; if(f==='SOON')show=show&&st==='DUE SOON'; if(f==='OK')show=show&&st==='OK'; if(f==='CHECK')show=show&&st==='CHECK CYCLE';
+   if(!show)return;
+   const tr=document.createElement('tr');
+   tr.innerHTML=`<td class="center">${i+1}</td><td class="eq">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td class="center">${esc(r[6])}</td>
+   <td><input class="qty" value="${esc(v.qty||'')}" data-k="${key}" data-f="qty"></td>
+   <td><input class="date" type="date" value="${esc(v.date||'')}" data-k="${key}" data-f="date"></td>
+   <td class="next">${next||'—'}</td><td class="status ${cls}">${st}</td>
+   <td><input class="worker" value="${esc(v.worker||'')}" data-k="${key}" data-f="worker"></td>
+   <td><input class="remark" value="${esc(v.remark||'')}" data-k="${key}" data-f="remark"></td>`;
+   tb.appendChild(tr);
+ });
+ document.getElementById('summary').innerHTML=`<div class="card">전체 <b>${counts.TOTAL}</b></div><div class="card">정상 <b>${counts.OK}</b></div><div class="card">7일 이내 <b>${counts.SOON}</b></div><div class="card">지연 <b>${counts.OVERDUE}</b></div><div class="card">주기 확인 <b>${counts.CHECK}</b></div>`;
+}
+function esc(x){return String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+document.addEventListener('input',e=>{
+ if(!e.target.dataset.k)return;
+ const k=e.target.dataset.k,f=e.target.dataset.f;
+ saved[k]=saved[k]||{}; saved[k][f]=e.target.value; localStorage.setItem(KEY,JSON.stringify(saved)); render();
+});
+document.getElementById('search').addEventListener('input',render);
+document.getElementById('filter').addEventListener('change',render);
+function clearAll(){if(confirm('모든 입력값을 삭제하시겠습니까?')){saved={};localStorage.removeItem(KEY);render()}}
+function exportCSV(){
+ let lines=[['No.','EQUIPMENT','EQUIPMENT-KKS','LCP-KKS','Injection Item','Lubricant Model','Dosage/Cycle','Injection Point','Injected Q\'ty','Injection Date','Next Injection Date','Status','Worker','Remarks']];
+ DATA.forEach((r,i)=>{let v=saved['r'+i]||{};let cyc=daysFor(r[5]),next=v.date&&cyc?addDays(v.date,cyc):'',st=status(next)[0];lines.push([...r,v.qty||'',v.date||'',next,st,v.worker||'',v.remark||''])});
+ const csv='\ufeff'+lines.map(x=>x.map(y=>`"${String(y).replaceAll('"','""')}"`).join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Lubricant_Checklist.csv';a.click();
+}
+render();
+</script>
+</body></html>
